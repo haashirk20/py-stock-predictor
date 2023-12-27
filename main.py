@@ -11,8 +11,7 @@ TODAY = date.today().strftime("%Y-%m-%d")
 
 st.title("Stock Prediction App")
 
-stocks = ("AAPL", "GOOG", "MSFT", "GME")
-selected_stock = st.selectbox("Select dataset for prediction", stocks)
+stock_name = st.text_input("Stock Name")
 
 n_years = st.slider("Years of prediction:", 1, 4)
 period = n_years * 365
@@ -23,9 +22,18 @@ def load_data(ticker):
     data.reset_index(inplace=True)
     return data
 
-data_load_state = st.text("Load data...")
-data = load_data(selected_stock)
-data_load_state.text("Loading data...done!")
+try:
+    data_load_state = st.text("Loading data...")
+    data = load_data(stock_name)
+except:
+    st.write("Please input a stock name.")
+    st.stop()
+
+data_load_state.text("Done!")
+
+if data.empty:
+    st.write("Invalid Stock")
+    st.stop()
 
 st.subheader("Raw data")
 st.write(data.tail())
@@ -43,7 +51,11 @@ plot_raw_data()
 df_train = data[['Date', 'Close']]
 df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})
 m = Prophet()
-m.fit(df_train)
+try:
+    m.fit(df_train)
+except:
+    st.write("No data found for this stock")
+    st.stop()
 future = m.make_future_dataframe(periods=period)
 forecast = m.predict(future)
 
