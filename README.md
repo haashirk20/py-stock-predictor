@@ -1,32 +1,49 @@
-# Stock Predictor
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/hero-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/readme/hero-light.svg">
+    <img src="assets/readme/hero-dark.svg" width="880" alt="Stock Predictor: a Streamlit app that forecasts a stock's closing price 1 to 4 years ahead with Prophet, using daily prices since 2015. Illustrated forecast chart.">
+  </picture>
+</p>
 
-A Streamlit app that downloads a stock's price history from Yahoo Finance and forecasts its closing price up to four years ahead with Prophet.
+<p align="center">
+  <strong>Type a ticker, pick 1 to 4 years, and get a Prophet forecast of the closing price.</strong><br>
+  <sub>Streamlit, yfinance, Prophet and Plotly. A proof of concept: don't use it to make financial decisions.</sub>
+</p>
 
-![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?logo=streamlit&logoColor=white)
-![Prophet](https://img.shields.io/badge/Prophet-time%20series-0467DF)
-![Plotly](https://img.shields.io/badge/Plotly-3F4F75?logo=plotly&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-0E1117?style=flat-square&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/Streamlit-0E1117?style=flat-square&logo=streamlit&logoColor=FF4B4B" alt="Streamlit">
+  <img src="https://img.shields.io/badge/Prophet-time%20series-0E1117?style=flat-square" alt="Prophet">
+  <img src="https://img.shields.io/badge/Plotly-0E1117?style=flat-square&logo=plotly&logoColor=white" alt="Plotly">
+</p>
 
-> This is a proof of concept. Don't use it to make financial decisions.
+---
+
+Type a ticker symbol and choose a forecast length of 1 to 4 years. The app pulls daily prices since January 2015 from Yahoo Finance, shows the latest rows and an interactive chart of open and close prices, then fits a Prophet model to the closing prices. It plots the forecast with its uncertainty band, plus Prophet's trend and seasonality components.
 
 ## Demo
 
 ![Product demonstration](https://github.com/haashirk20/py-stock-predictor/assets/114118228/6f4b082a-0ebf-4835-b126-7f9bdc333669)
 
-## Overview
+## How it works
 
-Type a ticker symbol and choose a forecast length of 1 to 4 years. The app pulls daily prices since January 2015 with `yfinance`, shows the latest rows and an interactive chart of open and close prices, then fits a Prophet model to the closing prices. It plots the forecast with its uncertainty band, plus Prophet's trend and seasonality components.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/how-it-works-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/readme/how-it-works-light.svg">
+    <img src="assets/readme/how-it-works-dark.svg" width="880" alt="How it works: ticker and years, load_data with yfinance since 2015, rename Date and Close to ds and y, fit Prophet, forecast years times 365 days.">
+  </picture>
+</p>
 
-## Key features
+`load_data` downloads the history with `yf.download` and is wrapped in `st.cache_data`, so moving the slider doesn't download the data again. The app renames `Date` and `Close` to Prophet's expected `ds` and `y` and fits the default model, which handles trend plus weekly and yearly seasonality with no feature engineering. The horizon becomes `years × 365` days and goes to `make_future_dataframe`, so the one slider sets the whole forecast window.
 
-- Any ticker Yahoo Finance knows, typed into a text box.
-- Forecast length from 1 to 4 years, picked with a slider.
-- An interactive Plotly chart of historical open and close prices with a range slider.
-- A Prophet forecast chart with an uncertainty interval, and a components plot showing trend, weekly and yearly seasonality.
-- Messages for an empty input, a ticker with no data, and a failed fit, instead of a stack trace.
-- Downloads are cached with `st.cache_data`, so changing the slider doesn't download the data again.
+Other details:
 
-## Tech stack
+- Any ticker Yahoo Finance knows works, typed into a text box.
+- The historical chart is an interactive Plotly figure with a range slider.
+- The components plot (Matplotlib, from Prophet) shows trend, weekly and yearly seasonality separately.
+- An empty input, a ticker with no data, and a failed fit each show a message instead of a stack trace.
 
 | Area | Tools |
 |---|---|
@@ -35,22 +52,23 @@ Type a ticker symbol and choose a forecast length of 1 to 4 years. The app pulls
 | Forecasting | Prophet |
 | Charts | Plotly, Matplotlib (Prophet components) |
 
-## How it works
+## Known issue
 
-```mermaid
-flowchart LR
-    input["ticker + years"] --> load["load_data<br/>yf.download since 2015, cached"]
-    load --> raw["raw data table<br/>+ open/close chart"]
-    load --> train["rename Date, Close to ds, y"]
-    train --> fit["Prophet().fit"]
-    fit --> future["make_future_dataframe<br/>years x 365 days"]
-    future --> out["forecast chart<br/>+ components"]
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/known-issue-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/readme/known-issue-light.svg">
+    <img src="assets/readme/known-issue-dark.svg" width="880" alt="Known issue: current yfinance returns two-level columns and Prophet's fit raises a TypeError; passing multi_level_index=False to yf.download fixes it.">
+  </picture>
+</p>
+
+Current versions of `yfinance` return a two-level column index such as `('Close', 'AAPL')`, and `m.fit` then fails with `TypeError: arg must be a list, tuple, 1-d array, or Series`. Older `yfinance` versions no longer download any data from Yahoo, so pinning an old version doesn't help. The fix is one argument in `load_data`:
+
+```python
+data = yf.download(ticker, START, TODAY, multi_level_index=False)
 ```
 
-## Technical highlights
-
-- Prophet models a time series as trend plus weekly and yearly seasonality, so the app needs no feature engineering. It renames the columns to Prophet's expected `ds` and `y` and uses the default model.
-- The forecast horizon is converted to days (`years × 365`) and passed to `make_future_dataframe`, so one slider controls the forecast window.
+With that change the app fits and forecasts normally on yfinance 1.8.0 and Prophet 1.5.0.
 
 ## Getting started
 
@@ -60,13 +78,3 @@ streamlit run main.py
 ```
 
 Then open the local URL Streamlit prints, usually http://localhost:8501.
-
-## Known issue
-
-Current versions of `yfinance` return a two-level column index (`('Close', 'AAPL')`), and `m.fit` then fails with `TypeError: arg must be a list, tuple, 1-d array, or Series`. Older `yfinance` versions no longer download any data from Yahoo. The fix is one argument in `load_data`:
-
-```python
-data = yf.download(ticker, START, TODAY, multi_level_index=False)
-```
-
-With that change the app fits and forecasts normally on yfinance 1.8.0 and Prophet 1.5.0.
